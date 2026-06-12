@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Weight">
+  <title>Weight Tracker</title>
+  <style>
+    :root {
+      --bg: #0f0f12;
+      --surface: #1a1a22;
+      --card: #22222e;
+      --accent: #6ee7b7;
+      --accent2: #818cf8;
+      --text: #f0f0f5;
+      --muted: #888899;
+      --danger: #f87171;
+      --radius: 16px;
+      --safe-top: env(safe-area-inset-top);
+      --safe-bottom: env(safe-area-inset-bottom);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+      min-height: 100dvh;
+      padding: calc(var(--safe-top) + 16px) 16px calc(var(--safe-bottom) + 24px);
+      max-width: 430px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      font-size: 28px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      margin-bottom: 4px;
+    }
+
+    .subtitle {
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 24px;
+    }
+
+    /* Setup banner */
+    #setup-banner {
+      background: var(--card);
+      border-radius: var(--radius);
+      padding: 20px;
+      margin-bottom: 20px;
+      border: 1px solid #2e2e3e;
+    }
+
+    #setup-banner h2 {
+      font-size: 15px;
+      font-weight: 600;
+      margin-bottom: 14px;
+      color: var(--accent);
+    }
+
+    .setup-row {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .setup-field {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .setup-field label {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      color: var(--muted);
+    }
+
+    .setup-field input {
+      background: var(--surface);
+      border: 1px solid #333344;
+      border-radius: 10px;
+      color: var(--text);
+      font-size: 16px;
+      padding: 10px 12px;
+      width: 100%;
+      outline: none;
+      -webkit-appearance: none;
+    }
+
+    .setup-field input:focus { border-color: var(--accent); }
+
+    .btn-save {
+      width: 100%;
+      background: var(--accent);
+      color: #0f0f12;
+      font-size: 15px;
+      font-weight: 700;
+      border: none;
+      border-radius: 12px;
+      padding: 13px;
+      margin-top: 4px;
+      cursor: pointer;
+    }
+
+    /* Stats row */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .stat-card {
+      background: var(--card);
+      border-radius: var(--radius);
+      padding: 14px 12px;
+      border: 1px solid #2e2e3e;
+      text-align: center;
+    }
+
+    .stat-value {
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      line-height: 1.1;
+    }
+
+    .stat-value.green { color: var(--accent); }
+    .stat-value.purple { color: var(--accent2); }
+
+    .stat-label {
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+
+    /* Progress bar */
+    .progress-wrap {
+      background: var(--card);
+      border-radius: var(--radius);
+      padding: 16px;
+      margin-bottom: 20px;
+      border: 1px solid #2e2e3e;
+    }
+
+    .progress-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 10px;
+    }
+
+    .progress-label {
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--muted);
+    }
+
+    .progress-pct {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--accent);
+    }
+
+    .progress-bar-bg {
+      background: var(--surface);
+      border-radius: 100px;
+      height: 8px;
+      overflow: hidden;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      border-radius: 100px;
+      background: linear-gradient(90deg, var(--accent2), var(--accent));
+      transition: width 0.4s ease;
+    }
+
+    /* Log entry */
+    .log-card {
+      background: var(--card);
+      border-radius: var(--radius);
+      padding: 18px;
+      margin-bottom: 20px;
+      border: 1px solid #2e2e3e;
+    }
+
+    .log-card h2 {
+      font-size: 15px;
+      font-weight: 600;
+      margin-bottom: 14px;
+    }
+
+    .log-row {
+      display: flex;
+      gap: 10px;
+      align-items: flex-end;
+    }
+
+    .log-field {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .log-field label {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      color: var(--muted);
+    }
+
+    .log-field input {
+      background: var(--surface);
+      border: 1px solid #333344;
+      border-radius: 10px;
+      color: var(--text);
+      font-size: 16px;
+      padding: 10px 12px;
+      width: 100%;
+      outline: none;
+      -webkit-appearance: none;
+    }
+
+    .log-field input:focus { border-color: var(--accent); }
+
+    .btn-log {
+      background: var(--accent2);
+      color: #fff;
+      font-size: 15px;
+      font-weight: 700;
+      border: none;
+      border-radius: 12px;
+      padding: 12px 20px;
+      cursor: pointer;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    /* History */
+    .history-card {
+      background: var(--card);
+      border-radius: var(--radius);
+      padding: 18px;
+      border: 1px solid #2e2e3e;
+    }
+
+    .history-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 14px;
+    }
+
+    .history-header h2 {
+      font-size: 15px;
+      font-weight: 600;
+    }
+
+    .btn-clear {
+      background: none;
+      border: 1px solid #444455;
+      color: var(--danger);
+      font-size: 11px;
+      font-weight: 600;
+      border-radius: 8px;
+      padding: 5px 10px;
+      cursor: pointer;
+    }
+
+    .history-actions {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .btn-export {
+      background: none;
+      border: 1px solid #444455;
+      color: var(--accent);
+      font-size: 11px;
+      font-weight: 600;
+      border-radius: 8px;
+      padding: 5px 10px;
+      cursor: pointer;
+    }
+
+    .btn-import {
+      background: none;
+      border: 1px solid #444455;
+      color: var(--accent2);
+      font-size: 11px;
+      font-weight: 600;
+      border-radius: 8px;
+      padding: 5px 10px;
+      cursor: pointer;
+    }
+
+    #import-file { display: none; }
+
+    .import-notice {
+      font-size: 12px;
+      color: var(--accent);
+      text-align: center;
+      padding: 8px 0 0;
+    }
+
+    .history-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .entry {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 11px 12px;
+      background: var(--surface);
+      border-radius: 10px;
+    }
+
+    .entry-date {
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .entry-weight {
+      font-size: 17px;
+      font-weight: 700;
+    }
+
+    .entry-delta {
+      font-size: 12px;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 100px;
+    }
+
+    .delta-down { background: rgba(110,231,183,0.12); color: var(--accent); }
+    .delta-up { background: rgba(248,113,113,0.12); color: var(--danger); }
+    .delta-same { background: rgba(136,136,153,0.12); color: var(--muted); }
+
+    .empty-state {
+      text-align: center;
+      color: var(--muted);
+      font-size: 14px;
+      padding: 24px 0;
+    }
+
+    .delete-btn {
+      background: none;
+      border: none;
+      color: var(--muted);
+      font-size: 16px;
+      cursor: pointer;
+      padding: 0 0 0 8px;
+      line-height: 1;
+    }
+
+    .settings-row {
+      display: flex;
+      justify-content: flex-end;
+      margin-bottom: 12px;
+    }
+
+    .btn-settings {
+      background: none;
+      border: 1px solid #333344;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.4px;
+      border-radius: 8px;
+      padding: 5px 12px;
+      cursor: pointer;
+    }
+
+    #setup-banner.hidden { display: none; }
+  </style>
+</head>
+<body>
+
+  <h1>Weight Tracker</h1>
+  <p class="subtitle" id="date-line">Loading...</p>
+
+  <div id="setup-banner">
+    <h2>Set Your Goals</h2>
+    <div class="setup-row">
+      <div class="setup-field">
+        <label>Starting Weight (lbs)</label>
+        <input type="number" id="input-start" placeholder="e.g. 220" step="0.1" inputmode="decimal">
+      </div>
+      <div class="setup-field">
+        <label>Goal Weight (lbs)</label>
+        <input type="number" id="input-goal" placeholder="e.g. 185" step="0.1" inputmode="decimal">
+      </div>
+    </div>
+    <button class="btn-save" onclick="saveSetup()">Save and Start Tracking</button>
+  </div>
+
+  <div id="main-content" style="display:none">
+
+    <div class="settings-row">
+      <button class="btn-settings" onclick="editSetup()">Edit Goals</button>
+    </div>
+
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-value" id="stat-start">—</div>
+        <div class="stat-label">Start</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value green" id="stat-current">—</div>
+        <div class="stat-label">Current</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value purple" id="stat-goal">—</div>
+        <div class="stat-label">Goal</div>
+      </div>
+    </div>
+
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-value green" id="stat-lost">—</div>
+        <div class="stat-label">Lost</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="stat-to-go">—</div>
+        <div class="stat-label">To Go</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="stat-weeks">—</div>
+        <div class="stat-label">Weeks</div>
+      </div>
+    </div>
+
+    <div class="progress-wrap">
+      <div class="progress-header">
+        <span class="progress-label">Progress to Goal</span>
+        <span class="progress-pct" id="progress-pct">0%</span>
+      </div>
+      <div class="progress-bar-bg">
+        <div class="progress-bar-fill" id="progress-bar" style="width:0%"></div>
+      </div>
+    </div>
+
+    <div class="log-card">
+      <h2>Log This Week</h2>
+      <div class="log-row">
+        <div class="log-field">
+          <label>Date</label>
+          <input type="date" id="log-date">
+        </div>
+        <div class="log-field">
+          <label>Weight (lbs)</label>
+          <input type="number" id="log-weight" placeholder="0.0" step="0.1" inputmode="decimal">
+        </div>
+        <button class="btn-log" onclick="logWeight()">Add</button>
+      </div>
+    </div>
+
+    <div class="history-card">
+      <div class="history-header">
+        <h2>History</h2>
+        <div class="history-actions">
+          <button class="btn-export" onclick="exportData()">Export</button>
+          <button class="btn-import" onclick="document.getElementById('import-file').click()">Import</button>
+          <button class="btn-clear" onclick="clearHistory()">Clear All</button>
+        </div>
+      </div>
+      <input type="file" id="import-file" accept=".json" onchange="importData(event)">
+      <div id="import-notice" class="import-notice" style="display:none"></div>
+      <div class="history-list" id="history-list">
+        <div class="empty-state">No entries yet. Log your first weight above.</div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    const KEYS = { start: 'wt_start', goal: 'wt_goal', log: 'wt_log' };
+
+    function today() {
+      const d = new Date();
+      return d.toISOString().split('T')[0];
+    }
+
+    function formatDate(str) {
+      const [y, m, d] = str.split('-');
+      const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+      return `${months[parseInt(m)-1]} ${parseInt(d)}, ${y}`;
+    }
+
+    function load() {
+      return {
+        start: parseFloat(localStorage.getItem(KEYS.start)) || null,
+        goal: parseFloat(localStorage.getItem(KEYS.goal)) || null,
+        log: JSON.parse(localStorage.getItem(KEYS.log) || '[]')
+      };
+    }
+
+    function save(data) {
+      if (data.start !== null) localStorage.setItem(KEYS.start, data.start);
+      if (data.goal !== null) localStorage.setItem(KEYS.goal, data.goal);
+      localStorage.setItem(KEYS.log, JSON.stringify(data.log));
+    }
+
+    function saveSetup() {
+      const s = parseFloat(document.getElementById('input-start').value);
+      const g = parseFloat(document.getElementById('input-goal').value);
+      if (!s || !g) { alert('Please enter both weights.'); return; }
+      const data = load();
+      data.start = s;
+      data.goal = g;
+      save(data);
+      render();
+    }
+
+    function editSetup() {
+      const data = load();
+      document.getElementById('input-start').value = data.start || '';
+      document.getElementById('input-goal').value = data.goal || '';
+      document.getElementById('setup-banner').classList.remove('hidden');
+      document.getElementById('main-content').style.display = 'none';
+    }
+
+    function logWeight() {
+      const dateVal = document.getElementById('log-date').value;
+      const weightVal = parseFloat(document.getElementById('log-weight').value);
+      if (!dateVal || !weightVal) { alert('Please enter both date and weight.'); return; }
+      const data = load();
+      const existing = data.log.findIndex(e => e.date === dateVal);
+      if (existing >= 0) {
+        data.log[existing].weight = weightVal;
+      } else {
+        data.log.push({ date: dateVal, weight: weightVal });
+      }
+      data.log.sort((a,b) => b.date.localeCompare(a.date));
+      save(data);
+      document.getElementById('log-weight').value = '';
+      render();
+    }
+
+    function deleteEntry(date) {
+      const data = load();
+      data.log = data.log.filter(e => e.date !== date);
+      save(data);
+      render();
+    }
+
+    function clearHistory() {
+      if (!confirm('Clear all log entries? Your start and goal weights will be kept.')) return;
+      const data = load();
+      data.log = [];
+      save(data);
+      render();
+    }
+
+    function render() {
+      const data = load();
+      const hasSetup = data.start !== null && data.goal !== null;
+
+      // Update date line
+      document.getElementById('date-line').textContent = formatDate(today());
+
+      // Show/hide sections
+      document.getElementById('setup-banner').classList.toggle('hidden', hasSetup);
+      document.getElementById('main-content').style.display = hasSetup ? 'block' : 'none';
+
+      if (!hasSetup) return;
+
+      // Set default date
+      document.getElementById('log-date').value = today();
+
+      // Stats
+      const current = data.log.length > 0 ? data.log[0].weight : data.start;
+      const lost = data.start - current;
+      const toGo = current - data.goal;
+      const totalToLose = data.start - data.goal;
+      const weeks = data.log.length;
+
+      document.getElementById('stat-start').textContent = data.start.toFixed(1);
+      document.getElementById('stat-current').textContent = current.toFixed(1);
+      document.getElementById('stat-goal').textContent = data.goal.toFixed(1);
+      document.getElementById('stat-lost').textContent = (lost >= 0 ? '' : '+') + Math.abs(lost).toFixed(1);
+      document.getElementById('stat-to-go').textContent = toGo > 0 ? toGo.toFixed(1) : '0.0';
+      document.getElementById('stat-weeks').textContent = weeks;
+
+      // Progress
+      const pct = totalToLose > 0 ? Math.min(100, Math.max(0, (lost / totalToLose) * 100)) : 0;
+      document.getElementById('progress-pct').textContent = Math.round(pct) + '%';
+      document.getElementById('progress-bar').style.width = pct + '%';
+
+      // History
+      const list = document.getElementById('history-list');
+      if (data.log.length === 0) {
+        list.innerHTML = '<div class="empty-state">No entries yet. Log your first weight above.</div>';
+        return;
+      }
+
+      list.innerHTML = data.log.map((entry, i) => {
+        const prev = data.log[i + 1];
+        let deltaHTML = '';
+        if (prev) {
+          const diff = entry.weight - prev.weight;
+          if (diff < 0) {
+            deltaHTML = `<span class="entry-delta delta-down">${diff.toFixed(1)}</span>`;
+          } else if (diff > 0) {
+            deltaHTML = `<span class="entry-delta delta-up">+${diff.toFixed(1)}</span>`;
+          } else {
+            deltaHTML = `<span class="entry-delta delta-same">0.0</span>`;
+          }
+        }
+        return `
+          <div class="entry">
+            <span class="entry-date">${formatDate(entry.date)}</span>
+            <span class="entry-weight">${entry.weight.toFixed(1)} lbs</span>
+            ${deltaHTML}
+            <button class="delete-btn" onclick="deleteEntry('${entry.date}')" title="Remove">×</button>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function exportData() {
+      const data = load();
+      const payload = {
+        exported: new Date().toISOString(),
+        start: data.start,
+        goal: data.goal,
+        log: data.log
+      };
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'weight-tracker-backup.json';
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function importData(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const payload = JSON.parse(e.target.result);
+          if (!payload.log || !Array.isArray(payload.log)) {
+            throw new Error('Invalid file format');
+          }
+          if (!confirm(`This will replace your current data with ${payload.log.length} entries from the backup. Continue?`)) return;
+          const data = {
+            start: payload.start || null,
+            goal: payload.goal || null,
+            log: payload.log
+          };
+          save(data);
+          const notice = document.getElementById('import-notice');
+          notice.textContent = `Imported ${payload.log.length} entries successfully.`;
+          notice.style.display = 'block';
+          setTimeout(() => { notice.style.display = 'none'; }, 3000);
+          render();
+        } catch(err) {
+          alert('Could not read that file. Make sure it is a backup exported from this tracker.');
+        }
+        event.target.value = '';
+      };
+      reader.readAsText(file);
+    }
+
+    render();
+
+</body>
+</html>
