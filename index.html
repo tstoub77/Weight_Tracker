@@ -422,6 +422,11 @@
         errEl.style.display = 'block';
         return;
       }
+      if (!isValidWeight(s) || !isValidWeight(g)) {
+        errEl.textContent = 'Weights must be between 1 and 1500.';
+        errEl.style.display = 'block';
+        return;
+      }
       errEl.style.display = 'none';
       const data = load();
       data.start = s;
@@ -444,6 +449,11 @@
       const errEl = document.getElementById('log-error');
       if (!dateVal || !weightVal) {
         errEl.textContent = 'Please enter both date and weight.';
+        errEl.style.display = 'block';
+        return;
+      }
+      if (!isValidDate(dateVal) || !isValidWeight(weightVal)) {
+        errEl.textContent = 'Enter a valid date and a weight between 1 and 1500.';
         errEl.style.display = 'block';
         return;
       }
