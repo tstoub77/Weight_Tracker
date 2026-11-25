@@ -1,0 +1,5 @@
+weight-tracker-backup*.json
+*.csv
+*.xlsx
+*.pdf
+.env*

@@ -371,12 +371,32 @@
       return months[parseInt(parts[1]) - 1] + ' ' + parseInt(parts[2]) + ', ' + parts[0];
     }
 
+    function isValidDate(str) {
+      if (typeof str !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(str)) return false;
+      const y = parseInt(str.slice(0, 4), 10);
+      const m = parseInt(str.slice(5, 7), 10);
+      const d = parseInt(str.slice(8, 10), 10);
+      const dt = new Date(Date.UTC(y, m - 1, d));
+      return dt.getUTCFullYear() === y && dt.getUTCMonth() === m - 1 && dt.getUTCDate() === d;
+    }
+
+    function isValidWeight(w) {
+      return typeof w === 'number' && isFinite(w) && w >= 1 && w <= 1500;
+    }
+
+    function isValidEntry(entry) {
+      return entry !== null && typeof entry === 'object' && isValidDate(entry.date) && isValidWeight(entry.weight);
+    }
+
     function load() {
       try {
         return {
           start: parseFloat(localStorage.getItem(KEYS.start)) || null,
           goal: parseFloat(localStorage.getItem(KEYS.goal)) || null,
-          log: JSON.parse(localStorage.getItem(KEYS.log) || '[]')
+          log: (function() {
+            const raw = JSON.parse(localStorage.getItem(KEYS.log) || '[]');
+            return Array.isArray(raw) ? raw.filter(isValidEntry) : [];
+          })()
         };
       } catch(e) {
         return { start: null, goal: null, log: [] };
@@ -499,7 +519,11 @@
       reader.onload = function(e) {
         try {
           const payload = JSON.parse(e.target.result);
-          if (!payload.log || !Array.isArray(payload.log)) throw new Error('bad format');
+          if (!payload || !Array.isArray(payload.log)) throw new Error('bad format');
+          if (!payload.log.every(isValidEntry)) throw new Error('bad entry');
+          ['start', 'goal'].forEach(function(k) {
+            if (payload[k] !== undefined && payload[k] !== null && !isValidWeight(payload[k])) throw new Error('bad ' + k);
+          });
           pendingImport = payload;
           document.getElementById('import-confirm-text').textContent =
             'This will replace your current data with ' + payload.log.length + ' entries from the backup. Continue?';
@@ -517,7 +541,7 @@
       const data = {
         start: pendingImport.start || null,
         goal: pendingImport.goal || null,
-        log: pendingImport.log
+        log: pendingImport.log.map(function(en) { return { date: en.date, weight: en.weight }; })
       };
       save(data);
       pendingImport = null;
@@ -566,26 +590,47 @@
         return;
       }
 
-      list.innerHTML = data.log.map(function(entry, i) {
+      list.textContent = '';
+      data.log.forEach(function(entry, i) {
         const prev = data.log[i + 1];
-        let deltaHTML = '';
+        const row = document.createElement('div');
+        row.className = 'entry';
+
+        const dateEl = document.createElement('span');
+        dateEl.className = 'entry-date';
+        dateEl.textContent = formatDate(entry.date);
+        row.appendChild(dateEl);
+
+        const weightEl = document.createElement('span');
+        weightEl.className = 'entry-weight';
+        weightEl.textContent = entry.weight.toFixed(1) + ' lbs';
+        row.appendChild(weightEl);
+
         if (prev) {
           const diff = entry.weight - prev.weight;
+          const deltaEl = document.createElement('span');
           if (diff < 0) {
-            deltaHTML = '<span class="entry-delta delta-down">' + diff.toFixed(1) + '</span>';
+            deltaEl.className = 'entry-delta delta-down';
+            deltaEl.textContent = diff.toFixed(1);
           } else if (diff > 0) {
-            deltaHTML = '<span class="entry-delta delta-up">+' + diff.toFixed(1) + '</span>';
+            deltaEl.className = 'entry-delta delta-up';
+            deltaEl.textContent = '+' + diff.toFixed(1);
           } else {
-            deltaHTML = '<span class="entry-delta delta-same">0.0</span>';
+            deltaEl.className = 'entry-delta delta-same';
+            deltaEl.textContent = '0.0';
           }
+          row.appendChild(deltaEl);
         }
-        return '<div class="entry">'
-          + '<span class="entry-date">' + formatDate(entry.date) + '</span>'
-          + '<span class="entry-weight">' + entry.weight.toFixed(1) + ' lbs</span>'
-          + deltaHTML
-          + '<button class="delete-btn" onclick="deleteEntry(\'' + entry.date + '\')" title="Remove">\u00d7</button>'
-          + '</div>';
-      }).join('');
+
+        const delBtn = document.createElement('button');
+        delBtn.className = 'delete-btn';
+        delBtn.title = 'Remove';
+        delBtn.textContent = '×';
+        delBtn.addEventListener('click', function() { deleteEntry(entry.date); });
+        row.appendChild(delBtn);
+
+        list.appendChild(row);
+      });
     }
 
     render();
